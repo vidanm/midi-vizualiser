@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<header>
+    <script src="https://pixijs.download/release/pixi.js"></script>
+    <script src="https://unpkg.com/@tonejs/midi"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"
+        integrity="sha512-jduERlz7En1IUZR54bqzpNI64AbffZWR//KJgF71SJ8D8/liKFZ+s1RxmUmB+bhCnIfzebdZsULwOrbVB5f3nQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</header>
+
+<body style="margin:0px;overflow:hidden;">
+    <input id="file" type="file" />
+</body>
+
+<script type="module">
+
+    /* MUSIC */
+    let now = Tone.now();
+    let currentMidi = null;
+    const synths = [];
+    const elem = document.getElementById("file");
+    elem.addEventListener("change", () => {
+        if (elem.files.length == 1) {
+            console.log("File selected: ", elem.files[0]);
+            parseFile(elem.files[0]);
+        }
+    });
+
+    function parseFile(file) {
+        //read the file
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            console.log(e);
+            const midi = new Midi(e.target.result);
+            currentMidi = midi;
+        };
+
+        reader.onloadend = function (e) {
+            currentMidi.tracks.forEach((track) => {
+                //create a synth for each track
+                const synth = new Tone.PolySynth(Tone.FMSynth, {
+                    envelope: {
+                        attack: 0,
+                        decay: 0.1,
+                        sustain: 0.3,
+                        release: 1,
+                    },
+                }).toDestination();
+                synths.push(synth);
+                //schedule all of the events
+                track.notes.forEach((note) => {
+                    synth.triggerAttackRelease(
+                        note.name,
+                        note.duration,
+                        note.time + now,
+                        note.velocity
+                    );
+                });
+            });
+        }
+        reader.readAsArrayBuffer(file);
+    }
+
+    function InitCircleContainer(nbCircles, r) {
+        const middleScreenX = app.screen.width / 2;
+        const middleScreenY = app.screen.height / 2;
+        const container = new PIXI.Container();
+        container.x = middleScreenX;
+        container.y = middleScreenY;
+
+        for (let i = (2 * Math.PI) / nbCircles; i <= (2 * Math.PI); i += (2 * Math.PI) / nbCircles) {
+            let circle = PIXI.Sprite.from('circle.png');
+            circle.anchor.set(0.5, 0.5);
+            circle.scale.set(0.05 + Math.random() / 5);
+            circle.x += Math.cos(i) * r;
+            circle.y += Math.sin(i) * r;
+            circle.tint = colors[Math.floor(Math.random() * colors.length)];
+            container.addChild(circle);
+        }
+        return container
+    }
+
+
+
+    /* GRAPHICS */
+    const colors = ['#FFE45E', '#FF6392', '#7FC8F8', '#5AA9E6']
+    const app = new PIXI.Application({ background: 'black', resizeTo: window });
+    const v_mainCircle = InitCircleContainer(15, 200)
+    const v_speed = 0.0025;
+
+    document.body.appendChild(app.view);
+    app.stage.addChild(v_mainCircle)
+
+    let elapsedTime = 0;
+    // Listen for animate update
+    app.ticker.add((delta) => {
+        elapsedTime += delta;
+        v_mainCircle.rotation += v_speed * delta;
+        v_mainCircle.children.forEach(x => {
+            x.position.y += Math.cos((x.position.x + elapsedTime) / 5) * 1;
+        });
+
+        if (currentMidi){
+            //todo
+        }
+    });
+</script>
+
+</html>
