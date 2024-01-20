@@ -13,11 +13,20 @@
     <input id="file" type="file" />
 </body>
 
+<style>
+    body {
+        background-image:url("noise_2.svg");
+        background-repeat: repeat;
+        background-attachment: fixed;
+    }
+</style>
+
 <script type="module">
 
     /* MUSIC */
     let now = Tone.now();
     let currentMidi = null;
+    let allNotes = [];
     const synths = [];
     const elem = document.getElementById("file");
     elem.addEventListener("change", () => {
@@ -50,6 +59,7 @@
                 synths.push(synth);
                 //schedule all of the events
                 track.notes.forEach((note) => {
+                    allNotes.push(note.time);
                     synth.triggerAttackRelease(
                         note.name,
                         note.duration,
@@ -76,6 +86,8 @@
             circle.x += Math.cos(i) * r;
             circle.y += Math.sin(i) * r;
             circle.tint = colors[Math.floor(Math.random() * colors.length)];
+            circle.alpha = 0.2;
+            circle.blendMode = PIXI.BLEND_MODES.ADD;
             container.addChild(circle);
         }
         return container
@@ -85,7 +97,7 @@
 
     /* GRAPHICS */
     const colors = ['#FFE45E', '#FF6392', '#7FC8F8', '#5AA9E6']
-    const app = new PIXI.Application({ background: 'black', resizeTo: window });
+    const app = new PIXI.Application({backgroundAlpha: 0, resizeTo: window });
     const v_mainCircle = InitCircleContainer(15, 200)
     const v_speed = 0.0025;
 
@@ -102,8 +114,13 @@
         });
 
         if (currentMidi){
-            //todo
+            while (Tone.now() > allNotes[0]){
+                console.log(elapsedTime,allNotes[0])
+                allNotes = allNotes.slice(1);
+            }
+            console.log(allNotes);
         }
+
     });
 </script>
 
